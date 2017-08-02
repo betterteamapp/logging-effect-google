@@ -8,6 +8,7 @@ module Control.Monad.Log.Handler where
 
 import Control.Lens ((&), (.~))
 import Control.Retry (recovering, exponentialBackoff, logRetries, defaultLogMsg)
+import Data.Foldable (toList)
 import Data.Text (Text)
 import Network.Google (runResourceT, runGoogle, send, Error(TransportError, ServiceError))
 import Network.Google.Logging
@@ -41,7 +42,8 @@ withGoogleLoggingHandler
     -> (Handler io LogEntry -> io a)
     -> io a
 withGoogleLoggingHandler options env logname resource labels =
-    withBatchedHandler options (flushToGoogleLogging env logname resource labels)
+    withBatchedHandler options $ \entries ->
+        flushToGoogleLogging env logname resource labels (toList entries)
 
 
 -- | method for flash log to <https://cloud.google.com/logging/ Google Logging>
@@ -99,7 +101,8 @@ withGooglePubSubHandler
     -> (Handler io PubsubMessage -> io a)
     -> io a
 withGooglePubSubHandler options env topic =
-    withBatchedHandler options (flushToGooglePubSub env topic)
+    withBatchedHandler options $ \entries ->
+        flushToGooglePubSub env topic (toList entries)
 
 
 -- | method for flash log to <https://cloud.google.com/pubsub/ Google PubSub>
